@@ -1,0 +1,11 @@
+.env
+
+# IDEs
+.idea/
+.vscode/
+
+# Logs 
+logs/
+*.log
+
+target/

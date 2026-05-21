@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          globalcors:
+            corsConfigurations:
+              '[/**]':
+                allowedOrigins: "http://localhost:5173"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+          routes:
+              - id: student-service
+                uri: lb://STUDENTSERVICE
+                predicates:
+                  - Path=/api/students/**
+
+              - id: course-service
+                uri: lb://COURSESERVICE
+                predicates:
+                  - Path=/api/courses/**
+
+              - id: enrollment-service
+                uri: lb://ENROLLMENTSERVICE
+                predicates:
+                  - Path=/api/enrollments/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: false
+    fetch-registry: true
+
+logging:
+  level:
+    root: DEBUG
+
