@@ -1,9 +1,15 @@
 package com.studentsenrollement.enrolementservice.services;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.studentsenrollement.enrolementservice.exceptions.ClassFullException;
+import com.studentsenrollement.enrolementservice.exceptions.ClassNotFoundException;
+import com.studentsenrollement.enrolementservice.exceptions.EnrolmentDeletionException;
+import com.studentsenrollement.enrolementservice.exceptions.EnrolmentNotFoundException;
+import com.studentsenrollement.enrolementservice.exceptions.StudentNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.studentsenrollement.enrolementservice.clients.CourseClient;
@@ -17,8 +23,8 @@ import com.studentsenrollement.enrolementservice.repositories.EnrollmentReposito
 public class EnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository;
-    private StudentClient studentClient;
-    private CourseClient courseClient;
+    private final StudentClient studentClient;
+    private final CourseClient courseClient;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository, StudentClient studentClient, CourseClient courseClient){
         this.enrollmentRepository = enrollmentRepository;
@@ -27,13 +33,11 @@ public class EnrollmentService {
     }
 
 
-    public List<EnrollmentResponseDTO> getEnrollementsByStudentId(Long studentId) {
+    public List<EnrollmentResponseDTO> getEnrollementsByStudentId(Long studentId){
         List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId);
 
         if(enrollments.isEmpty()){
-            //TODO: HANDLE ERRORS
-            System.out.println("STUDENT ID NOT FOUND");
-            return null;
+            throw new StudentNotFoundException("Student with id: " + studentId + " not found");
         }
 
         List<EnrollmentResponseDTO> responses = new ArrayList<>();
@@ -51,7 +55,7 @@ public class EnrollmentService {
                                                 .enrollmentId(enrollment.getId())
                                                 .courseName(courseName)
                                                 .studentCnie(studentCnie)
-                                                .date(enrollment.getEnrollmentDate().toString())
+                                                .date(enrollment.getEnrollmentDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
                                                 .deletable(isdeletable)
                                                 .build();
 
@@ -62,17 +66,19 @@ public class EnrollmentService {
         return responses;
     }
 
-    public List<EnrollmentResponseDTO> getEnrollementsByStudentCnie(String cnie) {
+    public List<EnrollmentResponseDTO> getEnrollementsByStudentCnie(String cnie){
 
         Long studentId = studentClient.getStudentByCnie(cnie);
 
+        if(studentId == null){
+            throw new StudentNotFoundException("Student with cnie: " + cnie + " not found");
+        }
+
         List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId);
 
-        if(enrollments.isEmpty()){
-            //TODO: HANDLE ERRORS
-            System.out.println("STUDENT ID NOT FOUND");
-            return null;
-        }
+//        if(enrollments.isEmpty()){
+//            return null;
+//        }
 
         List<EnrollmentResponseDTO> responses = new ArrayList<>();
 
@@ -89,11 +95,9 @@ public class EnrollmentService {
                                                 .enrollmentId(enrollment.getId())
                                                 .courseName(courseName)
                                                 .studentCnie(studentCnie)
-                                                .date(enrollment.getEnrollmentDate().toString())
+                                                .date(enrollment.getEnrollmentDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
                                                 .deletable(isdeletable)
                                                 .build();
-
-
             responses.add(res);
         }
 
@@ -101,34 +105,8 @@ public class EnrollmentService {
     }
 
 
-    // public List<String> getAllCourses(Long studentId) {
-    //     List<Enrollment> enrollments = enrollmentRepository.findAll();
 
-    //     List<Enrollment> studentEnrollements = enrollmentRepository.findByStudentId(studentId);
-
-    //     if(studentEnrollements == null){
-    //         //TODO:HANDLE ERROR
-    //         System.out.println("Student ID not found");
-    //         return null;
-    //     }
-
-
-    //     List<String> courses = new ArrayList<>();
-
-    //     for(Enrollment enrollment: enrollments){
-            
-    //         if(studentEnrollements.contains(enrollment)) continue;
-
-    //         String courseTitle =  courseClient.getCourseById(enrollment.getCourseId());
-
-    //         courses.add(courseTitle);
-    //     }
-
-    //     return courses;
-    // }
-
-
-    public EnrollmentResponseDTO enroll(EnrollmentRequest request) {
+    public EnrollmentResponseDTO enroll(EnrollmentRequest request){
         String studentCnie = request.getStudentCnie();
         String courseTitle = request.getCourseTitle();
 
@@ -136,8 +114,13 @@ public class EnrollmentService {
         Long studentId = studentClient.getStudentByCnie(studentCnie);
         Long courseId = courseClient.getCourseByTitle(courseTitle);
 
+        if(studentId == null){
+            throw new StudentNotFoundException("Student with cnie: " + studentCnie + " not found");
+        }
 
-
+        if(courseId == null){
+            throw new ClassNotFoundException("Class with title : " + courseTitle + " not found");
+        }
 
         Enrollment enrollment = new Enrollment();
         enrollment.setStudentId(studentId);
@@ -148,9 +131,7 @@ public class EnrollmentService {
         
 
         if(enrollments.size() == 3){
-            //TODO: HANDLE ERRORS
-            System.out.println("Error cannot enroll class is full");
-            return null;
+            throw new ClassFullException("Class " + courseTitle + " is full.");
         }
 
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
@@ -161,38 +142,30 @@ public class EnrollmentService {
                                 .enrollmentId(savedEnrollment.getId())
                                 .studentCnie(studentCnie)
                                 .courseName(courseTitle)
-                                .date(savedEnrollment.getEnrollmentDate().toString())
+                                .date(savedEnrollment.getEnrollmentDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
                                 .deletable(true)
                                 .build();
     }
 
 
-    public Enrollment getEnrollmentById(Long id) {
-        //TODO: HANDLE ERRORS
-        return enrollmentRepository.findById(id).orElse(null);
+    public Enrollment getEnrollmentById(Long id){
+        return enrollmentRepository.findById(id).orElseThrow(() -> new EnrolmentNotFoundException("Enrolment with ID: " + id + " not found"));
     }
 
 
     public void deleteEnrollementById(Long id) {
         Enrollment enrollment = getEnrollmentById(id);
-
-        if(enrollment == null){
-            //TODO: HANDLE ERRORS
-            System.out.println("ID NOT FOUND");
-            return;
-        }
-
         
-        
-        boolean isdeletable = enrollment.getEnrollmentDate().plusHours(24).isAfter(LocalDateTime.now());
+        //TODO: Change this to 24 hr
+         boolean isdeletable = enrollment.getEnrollmentDate().plusHours(24).isAfter(LocalDateTime.now());
+
+//        boolean isdeletable = enrollment.getEnrollmentDate().plusSeconds(30).isAfter(LocalDateTime.now());
  
         if(isdeletable){
             enrollmentRepository.deleteById(id);
         }else{
-            //TODO: HANDLE ERRORS
-            System.out.println("Cannot delete the enrollement!");
-            return;
-        }        
+            throw new EnrolmentDeletionException("Cannot delete enrollment " + id + ". The 24-hour time limit has expired.");
+        }
     }
 
 
@@ -200,11 +173,15 @@ public class EnrollmentService {
     public List<String> getAllCourses(String cnie) {
         Long studentId = studentClient.getStudentByCnie(cnie);
 
+        if(studentId == null){
+            throw new StudentNotFoundException("Student with cnie: " + cnie + " not found");
+        }
+
         List<Enrollment> studentEnrollements = enrollmentRepository.findByStudentId(studentId);
 
         List<String> allCourses = courseClient.getAllCourses();
 
-        if(studentEnrollements.isEmpty() || studentEnrollements == null){
+        if(studentEnrollements.isEmpty()){
             return allCourses;
         }
 

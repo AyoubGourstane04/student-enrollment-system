@@ -1,4 +1,3 @@
-#!/bin/bash
 echo "Stopping containers..."
 
 docker stop student-enrollment-system-course_db-1

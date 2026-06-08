@@ -43,7 +43,7 @@ public class EnrollmentController {
     }
 
     @GetMapping("/courses/{studentCnie}")
-    public List<String> getAllCoursesNotEnrolledIn(@PathVariable("studentCnie")String studentCnie){
+    public List<String> getAllCoursesNotEnrolledIn(@PathVariable("studentCnie") String studentCnie){
         return enrollmentService.getAllCourses(studentCnie);
     }
 
@@ -58,12 +58,6 @@ public class EnrollmentController {
         enrollmentService.deleteEnrollementById(id);
         return ResponseEntity.noContent().build();
     }
-
-
-    // @GetMapping("/courses/{studentId}")
-    // public List<String> getAllCoursesNotEnrolledIn(@PathVariable("studentId")Long studentId){
-    //     return enrollmentService.getAllCourses(studentId);
-    // }
 
 
 
