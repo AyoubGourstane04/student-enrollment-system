@@ -76,9 +76,6 @@ public class EnrollmentService {
 
         List<Enrollment> enrollments = enrollmentRepository.findByStudentId(studentId);
 
-//        if(enrollments.isEmpty()){
-//            return null;
-//        }
 
         List<EnrollmentResponseDTO> responses = new ArrayList<>();
 
@@ -155,12 +152,9 @@ public class EnrollmentService {
 
     public void deleteEnrollementById(Long id) {
         Enrollment enrollment = getEnrollmentById(id);
-        
-        //TODO: Change this to 24 hr
-         boolean isdeletable = enrollment.getEnrollmentDate().plusHours(24).isAfter(LocalDateTime.now());
 
-//        boolean isdeletable = enrollment.getEnrollmentDate().plusSeconds(30).isAfter(LocalDateTime.now());
- 
+        boolean isdeletable = enrollment.getEnrollmentDate().plusHours(24).isAfter(LocalDateTime.now());
+
         if(isdeletable){
             enrollmentRepository.deleteById(id);
         }else{

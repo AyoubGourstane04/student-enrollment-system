@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../components/Button";
 import { AnimatedBorderButton } from '../components/AnimatedBorderButton'
 import {AlertCircle, ArrowBigDown, Book, BookX, CheckCircle, CircleAlert, CircleCheck, CircleCheckBig, Search, XCircle} from 'lucide-react'
-import {submitCnieAlone, showAvailableCourses, handleEnrollSubmit, handleDeleteEnrollment, handleInternalServerError} from '../api/enrollement.service.api';
+import {submitCnieAlone, showAvailableCourses, handleEnrollSubmit, handleDeleteEnrollment} from '../api/enrollement.service.api';
 import { AnimatedBorderDeleteButton } from "../components/AnimatedBorderDeleteButton";
 import { HttpStatusCode } from "axios";
 import StatusNotification from "../components/StatusNotification";
@@ -61,7 +61,7 @@ export const Main = () => {
                 if(status === HttpStatusCode.NotFound){
                     setMessage({type: "error", message: serverMessage});
                 }else if(status === HttpStatusCode.InternalServerError){
-                    handleInternalServerError(serverMessage, navigate);
+                    setMessage({ type: "error", message: "The course catalog is currently offline. Please try again later." });
                 }else{
                     setMessage({ type: "error", message: `Something went wrong (Error ${status}).` });
                 }
@@ -87,8 +87,8 @@ export const Main = () => {
         try{
             const response = await showAvailableCourses(cnie);
 
-            if(response?.status == HttpStatusCode.Ok){
-                if(response?.data != null){
+            if(response?.status === HttpStatusCode.Ok){
+                if(response?.data !== null){
                     setAvailableCourse(prev => [...prev, ...response.data]);
                     setShowCoursesSelect(true);
                 }else{
@@ -105,7 +105,7 @@ export const Main = () => {
                 if(status === HttpStatusCode.NotFound){
                     setMessage({type: "error", message: serverMessage});
                 }else if(status === HttpStatusCode.InternalServerError){
-                    handleInternalServerError(serverMessage, navigate);
+                    setMessage({ type: "error", message: "The course catalog is currently offline. Please try again later." });
                 }else{
                     setMessage({ type: "error", message: `Something went wrong (Error ${status}).` });
                 }
@@ -125,7 +125,7 @@ export const Main = () => {
         try{
             const response = await handleEnrollSubmit(cnie, courseSelected);
 
-            if(response?.data != null){
+            if(response?.data !== null){
                 setEnrollments(prev => [...prev, response.data]);
                 setAvailableCourse(prev => prev.filter(c => c !== courseSelected));
                 setMessage({type: "success", message: "Enrolled Successfully"});
@@ -139,7 +139,7 @@ export const Main = () => {
                 if(status === HttpStatusCode.NotFound || status === HttpStatusCode.BadRequest){
                     setMessage({type: "error", message: serverMessage});
                 }else if(status === HttpStatusCode.InternalServerError){
-                    handleInternalServerError(serverMessage, navigate);
+                    setMessage({ type: "error", message: "The course catalog is currently offline. Please try again later." });
                 }else{
                     setMessage({ type: "error", message: `Something went wrong (Error ${status}).` });
                 }
@@ -178,7 +178,7 @@ export const Main = () => {
                 if(status === HttpStatusCode.NotFound || status === HttpStatusCode.BadRequest){
                     setMessage({type: "error", message: serverMessage});
                 }else if(status === HttpStatusCode.InternalServerError){
-                    handleInternalServerError(serverMessage, navigate);
+                    setMessage({ type: "error", message: "The course catalog is currently offline. Please try again later." });
                 }else{
                     setMessage({ type: "error", message: `Something went wrong (Error ${status}).` });
                 }
@@ -313,7 +313,7 @@ export const Main = () => {
                                     
                                     </thead>
                                     <tbody>
-                                        {enrollments.map((enrollment) => (
+                                        {enrollments.sort((a,b) => b.deletable - a.deletable).map((enrollment) => (
                                             <tr className="group bg-surface/50 hover:bg-surface transition-all duration-200 shadow-sm hover:shadow-md" key={enrollment.enrollmentId}>
                                                 <td className="px-4 py-4 text-foreground border-y border-l border-border group-hover:border-primary/40 rounded-l-xl font-medium">{enrollment.courseName}</td>
                                                 <td className="px-4 py-4 text-muted-foreground border-y border-border group-hover:border-primary/40">{enrollment.date}</td>

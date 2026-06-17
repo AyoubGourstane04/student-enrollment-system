@@ -30,10 +30,4 @@ export const handleDeleteEnrollment = async (enrollmentId) => {
         return response;
 }
 
-export const handleInternalServerError = (message, navigate) => {
-        console.error("500 Internal Server Error:", message);
-        if (navigate) {
-                navigate('/500', { state: { message: message } }); 
-        }
-};
 
